@@ -1,5 +1,6 @@
 import cv2
 import time
+import random
 from pathlib import Path
 from datetime import datetime
 
@@ -12,7 +13,7 @@ CAMERA_INDEX = 0
 
 WIDTH = 1920
 HEIGHT = 1080
-FPS = 30
+FPS = 60
 
 # Manual focus value
 FOCUS = 128.0
@@ -44,8 +45,18 @@ ROI_Y = ROI_Y1
 # MOTION DETECTION CONFIGURATION
 # ============================================================
 
-# Minimum time between saved images
-COOL_DOWN = 0.2
+# Minimum time between motion-triggered saved images.
+# Use a number for a fixed cooldown:
+# COOL_DOWN = 20
+#
+# Or use a tuple for a random cooldown selected after every
+# successful motion-triggered capture:
+# COOL_DOWN = (0.1, 20)
+COOL_DOWN = (0.1, 20)
+
+# Capture a frame after this many continuous seconds with no motion.
+# Set to -1 to completely disable no-motion captures.
+NO_MOTION_CAPTURE_COOL_DOWN = 2
 
 # Pixel difference threshold
 # Lower = more sensitive to movement
@@ -163,6 +174,10 @@ def main():
     )
     print(f"ROI Size   : {ROI_WIDTH}x{ROI_HEIGHT}")
     print(f"Cooldown   : {COOL_DOWN}s")
+    print(
+        f"No-motion capture cooldown: "
+        f"{NO_MOTION_CAPTURE_COOL_DOWN}s"
+    )
     print(f"Save folder: {SAVE_DIR}")
     print("========================================")
     print()
@@ -205,6 +220,43 @@ def main():
     previous_roi = None
 
     last_save_time = 0.0
+
+    # Current motion-triggered cooldown. If COOL_DOWN is a tuple,
+    # a new random value is selected after every successful capture.
+    if isinstance(COOL_DOWN, tuple):
+        if len(COOL_DOWN) != 2:
+            raise ValueError(
+                "COOL_DOWN tuple must contain exactly two values."
+            )
+
+        cooldown_min = float(min(COOL_DOWN))
+        cooldown_max = float(max(COOL_DOWN))
+
+        if cooldown_min < 0:
+            raise ValueError(
+                "COOL_DOWN values cannot be negative."
+            )
+
+        current_cooldown = random.uniform(
+            cooldown_min,
+            cooldown_max
+        )
+
+    else:
+        current_cooldown = float(COOL_DOWN)
+
+        if current_cooldown < 0:
+            raise ValueError(
+                "COOL_DOWN cannot be negative."
+            )
+
+    if NO_MOTION_CAPTURE_COOL_DOWN < -1:
+        raise ValueError(
+            "NO_MOTION_CAPTURE_COOL_DOWN must be -1 or >= 0."
+        )
+
+    # Tracks how long the scene has continuously had no motion.
+    no_motion_start_time = time.monotonic()
 
     motion_detected = False
 
@@ -344,8 +396,12 @@ def main():
 
         cooldown_finished = (
             current_time - last_save_time
-            >= COOL_DOWN
+            >= current_cooldown
         )
+
+        if motion_detected:
+            # Require a full no-motion interval again after motion stops.
+            no_motion_start_time = current_time
 
         if motion_detected and cooldown_finished:
 
@@ -371,6 +427,55 @@ def main():
                 )
 
                 last_save_time = current_time
+
+                # Pick the cooldown for the NEXT motion capture.
+                if isinstance(COOL_DOWN, tuple):
+                    current_cooldown = random.uniform(
+                        cooldown_min,
+                        cooldown_max
+                    )
+
+            else:
+
+                print(
+                    f"[ERROR] Failed to save "
+                    f"{filename}"
+                )
+
+        # ----------------------------------------------------
+        # Save frame after sustained no-motion period
+        # ----------------------------------------------------
+
+        if (
+            not motion_detected
+            and NO_MOTION_CAPTURE_COOL_DOWN != -1
+            and current_time - no_motion_start_time
+            >= NO_MOTION_CAPTURE_COOL_DOWN
+        ):
+
+            timestamp = datetime.now().strftime(
+                "%Y%m%d_%H%M%S_%f"
+            )
+
+            filename = (
+                SAVE_DIR /
+                f"no_motion_{timestamp}.jpg"
+            )
+
+            # Save CLEAN frame without overlays
+            success = cv2.imwrite(
+                str(filename),
+                clean_frame
+            )
+
+            if success:
+
+                print(
+                    f"[NO MOTION CAPTURED] {filename}"
+                )
+
+                # Start timing the next no-motion capture interval.
+                no_motion_start_time = current_time
 
             else:
 
@@ -455,10 +560,10 @@ def main():
             current_time - last_save_time
         )
 
-        if time_since_save < COOL_DOWN:
+        if time_since_save < current_cooldown:
 
             remaining = (
-                COOL_DOWN - time_since_save
+                current_cooldown - time_since_save
             )
 
             cooldown_text = (
