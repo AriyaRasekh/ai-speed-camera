@@ -6,6 +6,7 @@ Real-time AI speed camera running entirely on an NVIDIA Jetson Orin Nano 8GB. A 
   <img src="assets/cover1.jpg" width="48%" />
   <img src="assets/cover2.jpg" width="48%" />
 </p>
+
 ## Setup
 
 ```bash
