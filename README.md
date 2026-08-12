@@ -1,6 +1,6 @@
 # AI Highway Speed Camera
 
-Real-time computer vision system running on an **NVIDIA Jetson Orin Nano 8GB**. A fixed webcam observes highway traffic for vehicle detection, tracking, and speed estimation.
+Real-time AI speed camera running entirely on an NVIDIA Jetson Orin Nano 8GB. A fixed webcam observes live highway traffic, tracks individual vehicles, and calculates their speed based on their movement across the highway.
 
 <p align="center">
   <img src="assets/cover1.jpg" width="48%" />
