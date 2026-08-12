@@ -1,38 +1,36 @@
 # Highway Vehicle Data Collection
 
-Lightweight data collection for a real-time speed camera running on an **NVIDIA Jetson Orin Nano 8GB**.
+Data collection utility for a real-time highway speed camera running on an **NVIDIA Jetson Orin Nano 8GB**.
 
-The camera continuously watches the highway, but only saves frames when something moves through the road area. This avoids filling the dataset with empty road and nearly identical frames.
-
-## Demo
+Instead of saving every frame from the camera, the collector watches only the road area and saves an image when meaningful motion is detected. This produces a cleaner training dataset with fewer empty and repetitive frames.
 
 ![Highway data collection demo](assets/data_collection_demo.gif)
 
-## What the collector does
+## Key Features
 
-`data_collector.py`:
+- **1080p / 60 FPS capture**
+- **Road-only ROI** to ignore irrelevant parts of the scene
+- **Motion-triggered saving** so useful frames are captured automatically
+- **Noise filtering** to avoid false triggers from small pixel changes
+- **Cooldown between captures** to reduce duplicate images of the same vehicle
+- **Manual focus control** for a fixed highway camera
+- **Clean dataset images** — preview boxes and status text are never written to saved frames
 
-- captures **1080p / 60 FPS** webcam video
-- monitors only the highway ROI
-- detects motion using frame-to-frame differences
-- saves the original clean frame when traffic is detected
-- ignores tiny changes caused by noise
-- uses a cooldown to reduce duplicate images
-- keeps preview overlays out of the saved dataset
+The motion detection is intentionally lightweight. It compares consecutive frames inside the road ROI rather than running a neural network just to decide when to save an image. This keeps data collection fast and inexpensive on the Jetson.
 
-## Why this approach
+## Run
 
-Running a full object detector just to collect training data would be unnecessary.
+```bash
+python3 data_collector.py
+```
 
-Instead, the collector uses a very cheap motion check inside a narrow section of the frame. That makes it fast enough to run continuously on the Jetson while still catching small, distant vehicles.
-
-A small blur removes camera noise, dilation strengthens fragmented motion regions, and manual focus keeps the road consistently sharp as vehicles pass.
-
-## Files
+Controls:
 
 ```text
-.
-├── data_collector.py
-└── assets/
-    └── data_collection_demo.gif
+A / D   Adjust focus
+S       Save current frame manually
+Q       Quit
+ESC     Quit
 ```
+
+Captured images are written automatically to the `images/` directory.
