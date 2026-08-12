@@ -6,7 +6,17 @@ Real-time AI speed camera running entirely on an NVIDIA Jetson Orin Nano 8GB. A 
   <img src="assets/cover1.jpg" width="48%" />
   <img src="assets/cover2.jpg" width="48%" />
 </p>
+## Setup
 
+```bash
+git clone https://github.com/AriyaRasekh/ai-speed-camera.git
+cd ai-speed-camera
+
+python3 -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
+```
 ## Data Collection
 
 The first stage is collecting useful highway images for training.
