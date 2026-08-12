@@ -1,64 +1,37 @@
-# AI Speed Camera
+# Highway Vehicle Data Collection
 
-A real-time computer vision project running on an **NVIDIA Jetson Orin Nano 8GB**.
+Lightweight data collection for a real-time speed camera running on an **NVIDIA Jetson Orin Nano 8GB**.
 
-A webcam points at the highway, the system detects and tracks vehicles, then estimates their speed based on how far they move over time.
-
-## Data Collection
-
-The first step is building a useful vehicle dataset.
-
-`data_collector.py` watches the highway and automatically saves images when motion is detected in the road area.
-
-Instead of saving every video frame, it only captures useful traffic scenes. This reduces empty images, repeated frames, storage use, and annotation work.
+The camera continuously watches the highway, but only saves frames when something moves through the road area. This avoids filling the dataset with empty road and nearly identical frames.
 
 ## Demo
 
 ![Highway data collection demo](assets/data_collection_demo.gif)
 
-## How It Works
+## What the collector does
 
-- **Road-only detection:** motion is checked only in the part of the image where vehicles pass.
-- **Motion-triggered capture:** images are saved when a vehicle enters the monitored area.
-- **Lightweight processing:** simple frame differences are used instead of running an AI model during data collection.
-- **Clean saved images:** boxes and status text are shown only in the live preview and are not saved into the dataset.
-- **Manual focus:** keeps the highway consistently sharp instead of allowing autofocus to change as vehicles pass.
-- **Capture cooldown:** reduces repeated images of the same vehicle.
+`data_collector.py`:
 
-## Project Pipeline
+- captures **1080p / 60 FPS** webcam video
+- monitors only the highway ROI
+- detects motion using frame-to-frame differences
+- saves the original clean frame when traffic is detected
+- ignores tiny changes caused by noise
+- uses a cooldown to reduce duplicate images
+- keeps preview overlays out of the saved dataset
 
-```text
-Webcam
-  ↓
-Collect highway images
-  ↓
-Label vehicles
-  ↓
-Train vehicle detector
-  ↓
-Track vehicles
-  ↓
-Estimate vehicle speed
-```
+## Why this approach
 
-## Hardware
+Running a full object detector just to collect training data would be unnecessary.
 
-- NVIDIA Jetson Orin Nano 8GB
-- USB webcam
+Instead, the collector uses a very cheap motion check inside a narrow section of the frame. That makes it fast enough to run continuously on the Jetson while still catching small, distant vehicles.
 
-## Run
+A small blur removes camera noise, dilation strengthens fragmented motion regions, and manual focus keeps the road consistently sharp as vehicles pass.
 
-```bash
-python3 data_collector.py
-```
-
-Captured images are saved automatically into the `images/` folder.
-
-## Repository Structure
+## Files
 
 ```text
 .
-├── README.md
 ├── data_collector.py
 └── assets/
     └── data_collection_demo.gif
