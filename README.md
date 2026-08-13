@@ -54,5 +54,5 @@ Captured images are saved automatically to the `images/` directory.
 
 ## Training
 TODO
-![Highway data collection demo](assets/data_collection_demo.gif)
+![Highway data collection demo](assets/t1.gif)
 
