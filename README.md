@@ -51,3 +51,8 @@ Controls:
 - `Q` or `ESC` — quit
 
 Captured images are saved automatically to the `images/` directory.
+
+## Training
+TODO
+![Highway data collection demo](assets/data_collection_demo.gif)
+
